@@ -1,0 +1,247 @@
+@font-face {
+  font-family: system-fallback;
+  src: local(Arial);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  font-family: "Courier New", ui-monospace, monospace;
+  color: #d7d2c8;
+  user-select: none;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+}
+
+#ui-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#ui-root a,
+#ui-root button {
+  pointer-events: auto;
+}
+
+.hs-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  background: radial-gradient(ellipse at center, rgba(10, 8, 8, 0.92) 0%, rgba(0, 0, 0, 0.98) 75%);
+  text-align: center;
+  padding: 2rem;
+  pointer-events: auto;
+}
+
+.hs-title {
+  font-size: clamp(2.2rem, 6vw, 4.5rem);
+  letter-spacing: 0.35em;
+  color: #b6221c;
+  text-shadow: 0 0 18px rgba(182, 34, 28, 0.75), 0 0 40px rgba(182, 34, 28, 0.35);
+  margin: 0;
+  animation: hs-flicker 4.5s infinite;
+}
+
+@keyframes hs-flicker {
+  0%, 92%, 100% { opacity: 1; }
+  93% { opacity: 0.4; }
+  94% { opacity: 1; }
+  95% { opacity: 0.2; }
+  96% { opacity: 1; }
+}
+
+.hs-sub {
+  max-width: 640px;
+  line-height: 1.7;
+  font-size: 0.95rem;
+  color: #a9a099;
+  white-space: pre-line;
+}
+
+.hs-controls {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.35rem 1.5rem;
+  font-size: 0.85rem;
+  color: #7d766f;
+  margin-top: 0.5rem;
+}
+
+.hs-controls span:nth-child(odd) {
+  color: #c7c0b8;
+  text-align: right;
+}
+
+.hs-btn {
+  margin-top: 1rem;
+  background: #1a1414;
+  border: 1px solid #6b1414;
+  color: #d7c9c9;
+  padding: 0.9rem 2.2rem;
+  font-family: inherit;
+  letter-spacing: 0.2em;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.hs-btn:hover {
+  background: #6b1414;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(182, 34, 28, 0.5);
+}
+
+.hs-hidden {
+  display: none !important;
+}
+
+/* HUD */
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transform: translate(-50%, -50%);
+}
+
+#objective {
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  color: #cfc7bd;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.4rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#prompt {
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.5rem 1rem;
+  border-left: 2px solid #b6221c;
+}
+
+#fuses {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  color: #cfc7bd;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.fuse-pip {
+  width: 14px;
+  height: 14px;
+  border: 1px solid #7d766f;
+  background: transparent;
+}
+
+.fuse-pip.on {
+  background: #d98c1f;
+  box-shadow: 0 0 8px #d98c1f;
+  border-color: #d98c1f;
+}
+
+#sanity-bar {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  width: 160px;
+  height: 8px;
+  border: 1px solid #4a4340;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+#sanity-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #6b1414, #b6221c);
+  transition: width 0.3s linear;
+}
+
+#battery-bar {
+  position: absolute;
+  bottom: 2.6rem;
+  left: 1.5rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: #7d766f;
+}
+
+#vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 12rem 3rem rgba(0, 0, 0, 0.85);
+  opacity: 0.6;
+  transition: opacity 0.4s ease;
+}
+
+#dread-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(107, 20, 20, 0) 40%, rgba(107, 20, 20, 0.35) 100%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  mix-blend-mode: multiply;
+}
+
+#jumpscare {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#jumpscare.flash {
+  opacity: 1;
+  background: #200;
+}
