@@ -10,10 +10,11 @@ const FLASHLIGHT_DRAIN_PER_SEC = 0.045;
 const FLASHLIGHT_RECHARGE_PER_SEC = 0.02;
 
 export class PlayerController {
-  constructor(camera, domElement, level) {
+  constructor(camera, domElement, level, settings) {
     this.camera = camera;
     this.domElement = domElement;
     this.level = level;
+    this.settings = settings;
 
     this.yaw = 0;
     this.pitch = 0;
@@ -74,9 +75,10 @@ export class PlayerController {
   }
 
   _onMouseMove(e) {
-    const sensitivity = 0.0022;
+    const sensitivity = 0.0022 * (this.settings?.mouseSensitivity ?? 1);
+    const invert = this.settings?.invertY ? -1 : 1;
     this.yaw -= e.movementX * sensitivity;
-    this.pitch -= e.movementY * sensitivity;
+    this.pitch -= e.movementY * sensitivity * invert;
     const limit = Math.PI / 2 - 0.05;
     this.pitch = Math.max(-limit, Math.min(limit, this.pitch));
   }
@@ -127,7 +129,7 @@ export class PlayerController {
 
   update(dt) {
     const forward = this.getForward();
-    const right = new THREE.Vector3(forward.z, 0, -forward.x);
+    const right = new THREE.Vector3(-forward.z, 0, forward.x);
 
     let ix = 0;
     let iz = 0;

@@ -29,6 +29,9 @@ export class Level {
     this.materials = initMaterials();
     this.group = new THREE.Group();
     this.fuses = [];
+    this.notes = [];
+    this.batteries = [];
+    this.doors = [];
     this.flickerLights = [];
     this.deadLights = [];
     this.panelLight = null;
@@ -42,6 +45,9 @@ export class Level {
     this._buildProps();
     this._buildLights();
     this._buildFuses();
+    this._buildNotes();
+    this._buildBatteries();
+    this._buildDoors();
     this._buildPanelAndExit();
   }
 
@@ -266,6 +272,97 @@ export class Level {
       group.userData = { id: f.id, collected: false, kind: "fuse" };
       this.group.add(group);
       this.fuses.push(group);
+    }
+  }
+
+  _buildNotes() {
+    const geo = new THREE.PlaneGeometry(0.4, 0.55);
+    for (const n of POI.notes) {
+      const center = cellCenterWorld(n.x, n.z);
+      const group = new THREE.Group();
+      group.position.set(center.x, 1.05, center.z);
+      group.rotation.y = Math.random() * Math.PI * 2;
+      group.rotation.x = -0.35;
+
+      const mesh = new THREE.Mesh(geo, this.materials.note);
+      mesh.castShadow = false;
+      group.add(mesh);
+
+      const light = new THREE.PointLight(0xfff3d6, 1.6, 0, 2);
+      light.position.set(0, 0.15, 0.2);
+      group.add(light);
+
+      group.userData = {
+        id: n.id,
+        collected: false,
+        kind: "note",
+        title: n.title,
+        text: n.text,
+      };
+      this.group.add(group);
+      this.notes.push(group);
+    }
+  }
+
+  _buildBatteries() {
+    const geo = new THREE.BoxGeometry(0.22, 0.4, 0.16);
+    for (const b of POI.batteries) {
+      const center = cellCenterWorld(b.x, b.z);
+      const group = new THREE.Group();
+      group.position.set(center.x, 0.85, center.z);
+
+      const mesh = new THREE.Mesh(geo, this.materials.battery);
+      mesh.castShadow = true;
+      group.add(mesh);
+
+      const light = new THREE.PointLight(0x2fae7a, 5, 0, 2);
+      light.position.set(0, 0.2, 0);
+      group.add(light);
+
+      group.userData = { id: b.id, collected: false, kind: "battery" };
+      this.group.add(group);
+      this.batteries.push(group);
+    }
+  }
+
+  _buildDoors() {
+    const panelW = 1.55;
+    const panelH = WALL_HEIGHT * 0.82;
+    const geo = new THREE.BoxGeometry(panelW, panelH, 0.18);
+    for (const d of POI.doors) {
+      const hinge = new THREE.Group();
+      hinge.position.set(d.x, 0, d.z);
+
+      const panel = new THREE.Mesh(geo, this.materials.door);
+      panel.position.set(d.axis === "x" ? panelW / 2 : 0, panelH / 2, d.axis === "x" ? 0 : panelW / 2);
+      panel.castShadow = true;
+      panel.receiveShadow = true;
+      hinge.add(panel);
+
+      this.group.add(hinge);
+      this.doors.push({
+        hinge,
+        position: new THREE.Vector3(d.x, 0, d.z),
+        angle: 0,
+        targetAngle: 0,
+        wasOpening: false,
+      });
+    }
+  }
+
+  // Doors swing open on their own as the player nears them, and creak
+  // shut again once they've moved on - a bit of tactile, reactive scenery.
+  updateDoors(dt, playerPos, onCreak) {
+    const OPEN_ANGLE = Math.PI * 0.42;
+    const TRIGGER_DIST = 4.5;
+    for (const door of this.doors) {
+      const dist = door.position.distanceTo(playerPos);
+      door.targetAngle = dist < TRIGGER_DIST ? OPEN_ANGLE : 0;
+      const opening = door.targetAngle > door.angle + 0.01;
+      if (opening && !door.wasOpening && onCreak) onCreak(door.position);
+      door.wasOpening = opening;
+      door.angle = THREE.MathUtils.lerp(door.angle, door.targetAngle, 1 - Math.pow(0.0005, dt));
+      door.hinge.rotation.y = door.angle;
     }
   }
 

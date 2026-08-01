@@ -1,18 +1,16 @@
 const STORY_TEXT = `Forschungsstation "KREIDE-9", 340 Meter unter der Oberfläche.
-
-Vor sechs Stunden brach der Funkkontakt ab. Du bist der Wartungstechniker,
-der zur Inspektion runtergeschickt wurde. Die Aufzüge sind tot. Die Notstromversorgung
-ist ausgefallen. Und irgendetwas anderes ist hier unten nicht mehr allein.
-
-Finde die drei Sicherungen, aktiviere den Generator im Maschinenraum
-und verlasse die Station - bevor sie dich findet.`;
+Der Funkkontakt brach vor sechs Stunden ab. Finde drei Sicherungen, aktiviere
+den Generator im Maschinenraum und verlasse die Station - bevor sie dich findet.`;
 
 export class UIManager {
-  constructor(root) {
+  constructor(root, settings) {
     this.root = root;
+    this.settings = settings;
     this._buildMenu();
     this._buildHud();
     this._buildPause();
+    this._buildSettings();
+    this._buildNoteOverlay();
     this._buildEndScreens();
   }
 
@@ -24,7 +22,7 @@ export class UIManager {
   }
 
   _buildMenu() {
-    const overlay = this._el("div", "hs-overlay", this.root);
+    const overlay = this._el("div", "hs-overlay hs-overlay-menu", this.root);
     this._el("h1", "hs-title", overlay).textContent = "HOLLOW STATION";
     this._el("p", "hs-sub", overlay).textContent = STORY_TEXT;
 
@@ -43,9 +41,15 @@ export class UIManager {
       this._el("span", null, controls).textContent = v;
     }
 
-    const btn = this._el("button", "hs-btn", overlay);
+    const btnRow = this._el("div", "hs-btn-row", overlay);
+    const btn = this._el("button", "hs-btn", btnRow);
     btn.textContent = "Station betreten";
     this.startButton = btn;
+
+    const settingsBtn = this._el("button", "hs-btn hs-btn-secondary", btnRow);
+    settingsBtn.textContent = "Einstellungen";
+    this.menuSettingsButton = settingsBtn;
+
     this.menuOverlay = overlay;
   }
 
@@ -100,10 +104,108 @@ export class UIManager {
   _buildPause() {
     const overlay = this._el("div", "hs-overlay hs-hidden", this.root);
     this._el("h1", "hs-title", overlay).textContent = "PAUSE";
-    const resume = this._el("button", "hs-btn", overlay);
+
+    const btnCol = this._el("div", "hs-btn-col", overlay);
+    const resume = this._el("button", "hs-btn", btnCol);
     resume.textContent = "Weiter";
     this.resumeButton = resume;
+
+    const restart = this._el("button", "hs-btn hs-btn-secondary", btnCol);
+    restart.textContent = "Neustart";
+    this.pauseRestartButton = restart;
+
+    const settings = this._el("button", "hs-btn hs-btn-secondary", btnCol);
+    settings.textContent = "Einstellungen";
+    this.pauseSettingsButton = settings;
+
+    const quit = this._el("button", "hs-btn hs-btn-secondary", btnCol);
+    quit.textContent = "Hauptmenü";
+    this.pauseQuitButton = quit;
+
     this.pauseOverlay = overlay;
+  }
+
+  _sliderRow(parent, id, labelText, min, max, step, value, format) {
+    const row = this._el("div", "hs-setting-row", parent);
+    const label = this._el("label", "hs-setting-label", row);
+    label.textContent = labelText;
+    label.htmlFor = id;
+    const input = this._el("input", "hs-slider", row);
+    input.type = "range";
+    input.id = id;
+    input.min = String(min);
+    input.max = String(max);
+    input.step = String(step);
+    input.value = String(value);
+    const readout = this._el("span", "hs-setting-value", row);
+    readout.textContent = format ? format(value) : String(value);
+    input.addEventListener("input", () => {
+      readout.textContent = format ? format(Number(input.value)) : input.value;
+    });
+    return input;
+  }
+
+  _buildSettings() {
+    const overlay = this._el("div", "hs-overlay hs-overlay-menu hs-hidden", this.root);
+    this._el("h1", "hs-title hs-title-sm", overlay).textContent = "EINSTELLUNGEN";
+
+    const panel = this._el("div", "hs-settings-panel", overlay);
+    const s = this.settings;
+    const pct = (v) => `${Math.round(v * 100)}%`;
+
+    this._el("h2", "hs-setting-group", panel).textContent = "Steuerung";
+    this.sensitivitySlider = this._sliderRow(
+      panel,
+      "set-sens",
+      "Mausempfindlichkeit",
+      0.2,
+      3,
+      0.1,
+      s.mouseSensitivity,
+      (v) => v.toFixed(1)
+    );
+    this.fovSlider = this._sliderRow(panel, "set-fov", "Sichtfeld (FOV)", 60, 100, 1, s.fov, (v) => `${v}°`);
+
+    const invertRow = this._el("div", "hs-setting-row", panel);
+    const invertLabel = this._el("label", "hs-setting-label", invertRow);
+    invertLabel.textContent = "Maus Y invertieren";
+    invertLabel.htmlFor = "set-invert";
+    const invertInput = this._el("input", null, invertRow);
+    invertInput.type = "checkbox";
+    invertInput.id = "set-invert";
+    invertInput.checked = !!s.invertY;
+    this.invertYCheckbox = invertInput;
+    this._el("span", "hs-setting-value", invertRow).textContent = "";
+
+    this._el("h2", "hs-setting-group", panel).textContent = "Audio";
+    this.masterVolumeSlider = this._sliderRow(
+      panel,
+      "set-master",
+      "Gesamtlautstärke",
+      0,
+      1,
+      0.05,
+      s.masterVolume,
+      pct
+    );
+    this.musicVolumeSlider = this._sliderRow(panel, "set-music", "Musik", 0, 1, 0.05, s.musicVolume, pct);
+    this.sfxVolumeSlider = this._sliderRow(panel, "set-sfx", "Effekte", 0, 1, 0.05, s.sfxVolume, pct);
+
+    const back = this._el("button", "hs-btn", overlay);
+    back.textContent = "Zurück";
+    this.settingsBackButton = back;
+
+    this.settingsOverlay = overlay;
+  }
+
+  _buildNoteOverlay() {
+    const note = this._el("div", "hs-note hs-hidden", this.root);
+    const title = this._el("h3", "hs-note-title", note);
+    this.noteTitleEl = title;
+    const text = this._el("p", "hs-note-text", note);
+    this.noteTextEl = text;
+    this._el("div", "hs-note-hint", note).textContent = "[E] Schließen";
+    this.noteOverlay = note;
   }
 
   _buildEndScreens() {
@@ -149,6 +251,22 @@ export class UIManager {
   }
   hidePause() {
     this.pauseOverlay.classList.add("hs-hidden");
+  }
+
+  showSettings() {
+    this.settingsOverlay.classList.remove("hs-hidden");
+  }
+  hideSettings() {
+    this.settingsOverlay.classList.add("hs-hidden");
+  }
+
+  showNote(title, text) {
+    this.noteTitleEl.textContent = title;
+    this.noteTextEl.textContent = text;
+    this.noteOverlay.classList.remove("hs-hidden");
+  }
+  hideNote() {
+    this.noteOverlay.classList.add("hs-hidden");
   }
 
   showDeath() {

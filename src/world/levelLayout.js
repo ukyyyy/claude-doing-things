@@ -71,6 +71,46 @@ export const POI = {
   ],
   panel: { x: 16, z: 24 },
   exitDoor: { x: 16, z: 26 },
+  batteries: [
+    { id: "batt1", x: 7, z: 24 },
+    { id: "batt2", x: 26, z: 7 },
+  ],
+  notes: [
+    {
+      id: "note1",
+      x: 7,
+      z: 3,
+      title: "Techniker-Logbuch, Eintrag 41",
+      text: `"Notstrom fällt wieder aus. Zweite Nacht in Folge. Ich melde es,
+aber die Zentrale sagt, es sei Priorität niedrig. Niemand hier unten
+scheint zu verstehen, dass 'niedrige Priorität' und '340 Meter unter
+der Oberfläche' sich nicht vertragen."`,
+    },
+    {
+      id: "note2",
+      x: 15,
+      z: 13,
+      title: "Letzter Funkspruch",
+      text: `"...nicht die Kabel. Ich wiederhole, das Problem ist nicht die
+Verkabelung. Es bewegt sich zwischen den Wänden. Wenn ihr das hier
+lest, geht nicht in die Wartungsschächte. Geht einfach nicht rein."`,
+    },
+    {
+      id: "note3",
+      x: 25,
+      z: 24,
+      title: "Warnschild, handgeschrieben",
+      text: `"WIR HABEN ES NICHT ERSCHOSSEN WEIL ES NICHT STIRBT
+WIR HABEN NUR ZEIT GEWONNEN
+LAUF WENN DU DAS LIEST"`,
+    },
+  ],
+  doors: [
+    { x: 24, z: 36, axis: "x" }, // entrance hall -> south corridor
+    { x: 68, z: 68, axis: "x" }, // hub -> generator corridor
+    { x: 96, z: 36, axis: "x" }, // corridor -> storage wing
+    { x: 32, z: 72, axis: "x" }, // corridor -> flooded corridor
+  ],
 };
 
 export const PATROL_ROUTE = [

@@ -271,6 +271,32 @@ export function makeDoorTexture(seed = 7, glow = "#b6221c") {
   return toTexture(canvas, [1, 1]);
 }
 
+export function makeNoteTexture(seed = 20) {
+  const size = 256;
+  const canvas = makeCanvas(size);
+  const ctx = canvas.getContext("2d");
+  const rng = mulberry32(seed);
+
+  ctx.fillStyle = "#d8d0b8";
+  ctx.fillRect(0, 0, size, size);
+  speckle(ctx, size, rng, 300, () => "#b8ae90", [0.08, 0.2], [0.5, 1.5]);
+
+  ctx.strokeStyle = "rgba(40,35,25,0.55)";
+  ctx.lineWidth = 2;
+  for (let y = 28; y < size - 16; y += 16) {
+    const wobble = (rng() - 0.5) * 4;
+    ctx.beginPath();
+    ctx.moveTo(18, y + wobble);
+    ctx.lineTo(18 + rng() * (size - 60), y + wobble);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = "rgba(30,20,15,0.3)";
+  ctx.lineWidth = 6;
+  ctx.strokeRect(4, 4, size - 8, size - 8);
+
+  return toTexture(canvas, [1, 1]);
+}
+
 export const Materials = {};
 
 export function initMaterials() {
@@ -344,6 +370,19 @@ export function initMaterials() {
     emissiveIntensity: 1.0,
     roughness: 0.5,
     metalness: 0.6,
+  });
+  Materials.note = new THREE.MeshStandardMaterial({
+    map: makeNoteTexture(20),
+    roughness: 0.85,
+    metalness: 0,
+    side: THREE.DoubleSide,
+  });
+  Materials.battery = new THREE.MeshStandardMaterial({
+    color: "#2fae7a",
+    emissive: "#2fae7a",
+    emissiveIntensity: 1.0,
+    roughness: 0.35,
+    metalness: 0.5,
   });
   return Materials;
 }

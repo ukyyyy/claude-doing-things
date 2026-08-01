@@ -117,6 +117,129 @@ body {
   display: none !important;
 }
 
+.hs-overlay {
+  overflow-y: auto;
+}
+
+.hs-overlay-menu {
+  background: radial-gradient(ellipse at center, rgba(10, 8, 8, 0.55) 0%, rgba(0, 0, 0, 0.88) 80%);
+}
+
+.hs-title-sm {
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+}
+
+.hs-btn-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.hs-btn-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: stretch;
+  width: min(280px, 80vw);
+}
+
+.hs-btn-col .hs-btn {
+  margin-top: 0;
+}
+
+.hs-btn-secondary {
+  border-color: #4a4340;
+  color: #b7b0a8;
+}
+
+.hs-btn-secondary:hover {
+  background: #33302c;
+  box-shadow: 0 0 16px rgba(120, 110, 100, 0.35);
+}
+
+.hs-settings-panel {
+  width: min(460px, 88vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  text-align: left;
+  background: rgba(10, 10, 10, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.25rem 1.5rem;
+}
+
+.hs-setting-group {
+  margin: 0.75rem 0 0.1rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: #b6221c;
+  text-transform: uppercase;
+}
+
+.hs-setting-group:first-child {
+  margin-top: 0;
+}
+
+.hs-setting-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.hs-setting-label {
+  color: #cfc7bd;
+}
+
+.hs-setting-value {
+  min-width: 3ch;
+  text-align: right;
+  color: #7d766f;
+  font-size: 0.8rem;
+}
+
+.hs-slider {
+  width: 100%;
+  accent-color: #b6221c;
+}
+
+.hs-note {
+  position: absolute;
+  bottom: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(480px, 80vw);
+  background: rgba(8, 6, 6, 0.85);
+  border: 1px solid rgba(182, 34, 28, 0.4);
+  padding: 1rem 1.25rem;
+  pointer-events: none;
+}
+
+.hs-note-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  color: #d98c1f;
+}
+
+.hs-note-text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #cfc7bd;
+  white-space: pre-line;
+}
+
+.hs-note-hint {
+  margin-top: 0.6rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  color: #7d766f;
+  text-align: right;
+}
+
 /* HUD */
 #hud {
   position: absolute;
