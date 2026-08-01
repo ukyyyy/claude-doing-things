@@ -14,6 +14,16 @@ verlassen - während dich etwas durch die Gänge verfolgt.
 
 ## Starten
 
+Am einfachsten per Skript (installiert Abhängigkeiten beim ersten Mal automatisch
+und öffnet den Browser):
+
+```bash
+./start.sh
+```
+
+Voraussetzung ist [Node.js](https://nodejs.org/) (Version 18+). Auf Windows im
+Terminal von Git Bash oder WSL ausführen, oder manuell:
+
 ```bash
 npm install
 npm run dev
