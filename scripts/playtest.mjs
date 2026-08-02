@@ -62,6 +62,39 @@ await page.screenshot({ path: path.join(shotDir, "02b-pause.png") });
 
 await page.click('.hs-overlay:not(.hs-hidden) button:has-text("Einstellungen")');
 await page.waitForTimeout(200);
+
+// Difficulty selector.
+await page.click('.hs-seg-btn:has-text("Schwer")');
+await page.waitForTimeout(100);
+const difficultyResult = await page.evaluate(() => ({
+  difficulty: window.__game.settings.difficulty,
+  activeClass: window.__game.ui.difficultyButtons.hard.classList.contains("active"),
+}));
+console.log("Difficulty set to hard:", difficultyResult);
+
+// Subtitles checkbox.
+await page.click("#set-subtitles");
+await page.waitForTimeout(100);
+console.log("Subtitles enabled:", await page.evaluate(() => window.__game.settings.subtitles));
+
+// Fullscreen button (headless: click should just not throw).
+await page.click('button:has-text("Umschalten")');
+await page.waitForTimeout(100);
+console.log("Fullscreen button click did not throw.");
+
+// Rebind "Interagieren" to KeyG, then back to KeyE so the rest of the test still works.
+await page.click(".hs-setting-row:has-text('Interagieren') button");
+await page.waitForTimeout(100);
+await page.keyboard.press("KeyG");
+await page.waitForTimeout(100);
+const rebindResult = await page.evaluate(() => window.__game.settings.keybindings.interact);
+console.log("Interact rebound to:", rebindResult);
+await page.click(".hs-setting-row:has-text('Interagieren') button");
+await page.waitForTimeout(100);
+await page.keyboard.press("KeyE");
+await page.waitForTimeout(100);
+console.log("Interact rebound back to:", await page.evaluate(() => window.__game.settings.keybindings.interact));
+
 await page.click('.hs-overlay:not(.hs-hidden) button:has-text("Zurück")');
 await page.waitForTimeout(200);
 const afterPauseSettingsBack = await page.evaluate(() => ({
@@ -118,6 +151,39 @@ const batteryResult = await page.evaluate(() => {
 });
 console.log("Battery pickup result:", batteryResult);
 
+// Journal: should now list the note we just read.
+await page.keyboard.press("Escape");
+await page.waitForTimeout(150);
+await page.click('.hs-overlay:not(.hs-hidden) button:has-text("Journal")');
+await page.waitForTimeout(150);
+const journalResult = await page.evaluate(() => ({
+  visible: !window.__game.ui.journalOverlay.classList.contains("hs-hidden"),
+  entryCount: window.__game.ui.journalListEl.querySelectorAll(".hs-journal-entry").length,
+}));
+console.log("Journal after collecting 1 note:", journalResult);
+await page.screenshot({ path: path.join(shotDir, "03g-journal.png") });
+await page.click('.hs-overlay:not(.hs-hidden) button:has-text("Zurück")');
+await page.waitForTimeout(150);
+await page.click('.hs-overlay:not(.hs-hidden) button:has-text("Weiter")');
+await page.waitForTimeout(150);
+console.log("State after journal round trip:", await page.evaluate(() => window.__game.state));
+
+// Vent dweller ambush: force the lingering timer past its threshold directly.
+const ventResult = await page.evaluate(() => {
+  const g = window.__game;
+  g.sanity.value = 80;
+  const before = { ...g.player.position };
+  g.ventDweller.timer = 0;
+  g.ventDweller.triggered = false;
+  g.ventDweller.update(10, true);
+  return {
+    triggered: g.ventDweller.triggered,
+    sanityAfter: g.sanity.value,
+    positionChanged: before.x !== g.player.position.x || before.z !== g.player.position.z,
+  };
+});
+console.log("Vent ambush result:", ventResult);
+
 // Door auto-swing: place the player right at a door hinge and tick updateDoors.
 const doorResult = await page.evaluate(() => {
   const g = window.__game;
@@ -169,6 +235,14 @@ const flowResult = await page.evaluate(() => {
   );
   THREE_POS(exitPos.x, exitPos.z);
   g.camera.lookAt(exitPos.x, exitPos.y, exitPos.z);
+  g._tryInteract();
+  log.push({ coreExitAnnounced: g._coreExitAnnounced, state: g.state });
+
+  const finalPos = g.level.finalExitMesh.getWorldPosition(
+    new (Object.getPrototypeOf(g.level.finalExitMesh.position).constructor)()
+  );
+  THREE_POS(finalPos.x, finalPos.z);
+  g.camera.lookAt(finalPos.x, finalPos.y, finalPos.z);
   g._tryInteract();
   log.push({ state: g.state });
 

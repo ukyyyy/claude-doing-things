@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { PATROL_ROUTE, CELL_SIZE } from "../world/Level.js";
 import { bfsPath, findNearestReachable } from "./Pathfinder.js";
+import { DIFFICULTY_PRESETS } from "../core/Settings.js";
 
 const STATE = {
   PATROL: "PATROL",
@@ -32,8 +33,9 @@ function gridCenterWorld(x, z) {
 }
 
 export class Stalker {
-  constructor(level) {
+  constructor(level, settings) {
     this.level = level;
+    this.settings = settings;
     this.state = STATE.PATROL;
     this.patrolIndex = 0;
     this.waitTimer = 0;
@@ -139,12 +141,17 @@ export class Stalker {
     return true;
   }
 
+  _difficulty() {
+    return DIFFICULTY_PRESETS[this.settings?.difficulty] || DIFFICULTY_PRESETS.normal;
+  }
+
   _canSensePlayer(player) {
     const playerPos = player.camera.position;
     const dist = this.position.distanceTo(playerPos);
     if (dist <= CLOSE_SENSE_RADIUS && this._hasLineOfSight(playerPos)) return true;
 
-    const visionRange = player.flashlightOn ? VISION_RANGE_LIT : VISION_RANGE_BASE;
+    const visionMult = this._difficulty().enemyVision;
+    const visionRange = (player.flashlightOn ? VISION_RANGE_LIT : VISION_RANGE_BASE) * visionMult;
     if (dist > visionRange) return false;
 
     const toPlayer = playerPos.clone().sub(this.position).setY(0).normalize();
@@ -171,7 +178,7 @@ export class Stalker {
     }
     to.normalize();
     this.facing.copy(to);
-    const step = Math.min(dist, speed * dt);
+    const step = Math.min(dist, speed * this._difficulty().enemySpeed * dt);
     this.position.x += to.x * step;
     this.position.z += to.z * step;
     return false;

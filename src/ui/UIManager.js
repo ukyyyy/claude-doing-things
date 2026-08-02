@@ -1,3 +1,23 @@
+const KEY_LABELS = {
+  ShiftLeft: "Shift",
+  ShiftRight: "Shift",
+  ControlLeft: "Strg",
+  ControlRight: "Strg",
+  Space: "Leertaste",
+  ArrowUp: "↑",
+  ArrowDown: "↓",
+  ArrowLeft: "←",
+  ArrowRight: "→",
+};
+
+function codeToLabel(code) {
+  if (!code) return "-";
+  if (KEY_LABELS[code]) return KEY_LABELS[code];
+  if (code.startsWith("Key")) return code.slice(3);
+  if (code.startsWith("Digit")) return code.slice(5);
+  return code;
+}
+
 const STORY_TEXT = `Forschungsstation "KREIDE-9", 340 Meter unter der Oberfläche.
 Der Funkkontakt brach vor sechs Stunden ab. Finde drei Sicherungen, aktiviere
 den Generator im Maschinenraum und verlasse die Station - bevor sie dich findet.`;
@@ -11,6 +31,7 @@ export class UIManager {
     this._buildPause();
     this._buildSettings();
     this._buildNoteOverlay();
+    this._buildJournal();
     this._buildEndScreens();
   }
 
@@ -23,6 +44,10 @@ export class UIManager {
 
   _buildMenu() {
     const overlay = this._el("div", "hs-overlay hs-overlay-menu", this.root);
+
+    const warning = this._el("div", "hs-compat-warning hs-hidden", overlay);
+    this.compatWarningEl = warning;
+
     this._el("h1", "hs-title", overlay).textContent = "HOLLOW STATION";
     this._el("p", "hs-sub", overlay).textContent = STORY_TEXT;
 
@@ -84,6 +109,12 @@ export class UIManager {
     sanityFill.id = "sanity-fill";
     this.sanityFill = sanityFill;
 
+    const staminaBar = this._el("div", null, hud);
+    staminaBar.id = "stamina-bar";
+    const staminaFill = this._el("div", null, staminaBar);
+    staminaFill.id = "stamina-fill";
+    this.staminaFill = staminaFill;
+
     const battery = this._el("div", null, hud);
     battery.id = "battery-bar";
     this.batteryEl = battery;
@@ -99,6 +130,16 @@ export class UIManager {
     const jumpscare = this._el("div", null, hud);
     jumpscare.id = "jumpscare";
     this.jumpscareEl = jumpscare;
+
+    const hint = this._el("div", null, hud);
+    hint.id = "hint";
+    hint.style.display = "none";
+    this.hintEl = hint;
+
+    const caption = this._el("div", null, hud);
+    caption.id = "caption";
+    caption.style.display = "none";
+    this.captionEl = caption;
   }
 
   _buildPause() {
@@ -113,6 +154,10 @@ export class UIManager {
     const restart = this._el("button", "hs-btn hs-btn-secondary", btnCol);
     restart.textContent = "Neustart";
     this.pauseRestartButton = restart;
+
+    const journal = this._el("button", "hs-btn hs-btn-secondary", btnCol);
+    journal.textContent = "Journal";
+    this.pauseJournalButton = journal;
 
     const settings = this._el("button", "hs-btn hs-btn-secondary", btnCol);
     settings.textContent = "Einstellungen";
@@ -153,6 +198,29 @@ export class UIManager {
     const s = this.settings;
     const pct = (v) => `${Math.round(v * 100)}%`;
 
+    this._el("h2", "hs-setting-group", panel).textContent = "Schwierigkeit";
+    const diffRow = this._el("div", "hs-seg-row", panel);
+    this.difficultyButtons = {};
+    for (const [key, label] of [
+      ["easy", "Leicht"],
+      ["normal", "Normal"],
+      ["hard", "Schwer"],
+    ]) {
+      const btn = this._el("button", "hs-seg-btn", diffRow);
+      btn.textContent = label;
+      if (s.difficulty === key) btn.classList.add("active");
+      this.difficultyButtons[key] = btn;
+    }
+
+    this._el("h2", "hs-setting-group", panel).textContent = "Anzeige";
+    this.fovSlider = this._sliderRow(panel, "set-fov", "Sichtfeld (FOV)", 60, 100, 1, s.fov, (v) => `${v}°`);
+    const fsRow = this._el("div", "hs-setting-row", panel);
+    this._el("label", "hs-setting-label", fsRow).textContent = "Vollbild";
+    const fsBtn = this._el("button", "hs-btn hs-btn-secondary hs-btn-inline", fsRow);
+    fsBtn.textContent = "Umschalten";
+    this.fullscreenButton = fsBtn;
+    this._el("span", "hs-setting-value", fsRow).textContent = "";
+
     this._el("h2", "hs-setting-group", panel).textContent = "Steuerung";
     this.sensitivitySlider = this._sliderRow(
       panel,
@@ -164,7 +232,6 @@ export class UIManager {
       s.mouseSensitivity,
       (v) => v.toFixed(1)
     );
-    this.fovSlider = this._sliderRow(panel, "set-fov", "Sichtfeld (FOV)", 60, 100, 1, s.fov, (v) => `${v}°`);
 
     const invertRow = this._el("div", "hs-setting-row", panel);
     const invertLabel = this._el("label", "hs-setting-label", invertRow);
@@ -176,6 +243,26 @@ export class UIManager {
     invertInput.checked = !!s.invertY;
     this.invertYCheckbox = invertInput;
     this._el("span", "hs-setting-value", invertRow).textContent = "";
+
+    this.keybindButtons = {};
+    const KEYBIND_LABELS = [
+      ["forward", "Vorwärts"],
+      ["back", "Rückwärts"],
+      ["left", "Links"],
+      ["right", "Rechts"],
+      ["sprint", "Sprinten"],
+      ["crouch", "Ducken"],
+      ["flashlight", "Taschenlampe"],
+      ["interact", "Interagieren"],
+    ];
+    for (const [action, label] of KEYBIND_LABELS) {
+      const row = this._el("div", "hs-setting-row", panel);
+      this._el("label", "hs-setting-label", row).textContent = label;
+      const btn = this._el("button", "hs-btn hs-btn-secondary hs-btn-inline", row);
+      btn.textContent = codeToLabel(s.keybindings[action]);
+      this._el("span", "hs-setting-value", row).textContent = "";
+      this.keybindButtons[action] = btn;
+    }
 
     this._el("h2", "hs-setting-group", panel).textContent = "Audio";
     this.masterVolumeSlider = this._sliderRow(
@@ -191,11 +278,36 @@ export class UIManager {
     this.musicVolumeSlider = this._sliderRow(panel, "set-music", "Musik", 0, 1, 0.05, s.musicVolume, pct);
     this.sfxVolumeSlider = this._sliderRow(panel, "set-sfx", "Effekte", 0, 1, 0.05, s.sfxVolume, pct);
 
+    const subRow = this._el("div", "hs-setting-row", panel);
+    const subLabel = this._el("label", "hs-setting-label", subRow);
+    subLabel.textContent = "Untertitel für Sound-Hinweise";
+    subLabel.htmlFor = "set-subtitles";
+    const subInput = this._el("input", null, subRow);
+    subInput.type = "checkbox";
+    subInput.id = "set-subtitles";
+    subInput.checked = !!s.subtitles;
+    this.subtitlesCheckbox = subInput;
+    this._el("span", "hs-setting-value", subRow).textContent = "";
+
     const back = this._el("button", "hs-btn", overlay);
     back.textContent = "Zurück";
     this.settingsBackButton = back;
 
     this.settingsOverlay = overlay;
+  }
+
+  setDifficultyActive(value) {
+    for (const [key, btn] of Object.entries(this.difficultyButtons)) {
+      btn.classList.toggle("active", key === value);
+    }
+  }
+
+  setKeybindLabel(action, code) {
+    if (this.keybindButtons[action]) this.keybindButtons[action].textContent = codeToLabel(code);
+  }
+
+  setKeybindListening(action) {
+    if (this.keybindButtons[action]) this.keybindButtons[action].textContent = "Taste drücken…";
   }
 
   _buildNoteOverlay() {
@@ -206,6 +318,38 @@ export class UIManager {
     this.noteTextEl = text;
     this._el("div", "hs-note-hint", note).textContent = "[E] Schließen";
     this.noteOverlay = note;
+  }
+
+  _buildJournal() {
+    const overlay = this._el("div", "hs-overlay hs-overlay-menu hs-hidden", this.root);
+    this._el("h1", "hs-title hs-title-sm", overlay).textContent = "JOURNAL";
+    const list = this._el("div", "hs-journal-list", overlay);
+    this.journalListEl = list;
+    const back = this._el("button", "hs-btn", overlay);
+    back.textContent = "Zurück";
+    this.journalBackButton = back;
+    this.journalOverlay = overlay;
+  }
+
+  setJournalEntries(entries) {
+    this.journalListEl.innerHTML = "";
+    if (!entries.length) {
+      const empty = this._el("p", "hs-sub", this.journalListEl);
+      empty.textContent = "Noch keine Notizen gefunden.";
+      return;
+    }
+    for (const entry of entries) {
+      const item = this._el("div", "hs-journal-entry", this.journalListEl);
+      this._el("h3", "hs-note-title", item).textContent = entry.title;
+      this._el("p", "hs-note-text", item).textContent = entry.text;
+    }
+  }
+
+  showJournal() {
+    this.journalOverlay.classList.remove("hs-hidden");
+  }
+  hideJournal() {
+    this.journalOverlay.classList.add("hs-hidden");
   }
 
   _buildEndScreens() {
@@ -220,16 +364,26 @@ export class UIManager {
 
     const win = this._el("div", "hs-overlay hs-hidden", this.root);
     win.style.background = "radial-gradient(ellipse at center, rgba(20,30,20,0.9) 0%, rgba(0,0,0,0.98) 75%)";
-    const winTitle = this._el("h1", "hs-title", win);
-    winTitle.textContent = "ENTKOMMEN";
-    winTitle.style.color = "#3fd97a";
-    winTitle.style.textShadow = "0 0 18px rgba(63,217,122,0.75)";
-    this._el("p", "hs-sub", win).textContent =
+    this.winTitleEl = this._el("h1", "hs-title", win);
+    this.winTitleEl.textContent = "ENTKOMMEN";
+    this.winTitleEl.style.color = "#3fd97a";
+    this.winTitleEl.style.textShadow = "0 0 18px rgba(63,217,122,0.75)";
+    this.winTextEl = this._el("p", "hs-sub", win);
+    this.winTextEl.textContent =
       "Du erreichst die Oberfläche. Hinter dir fällt die Luke ins Schloss. Was auch immer in Kreide-9 lebt - es bleibt dort unten. Vorerst.";
     const retryWin = this._el("button", "hs-btn", win);
     retryWin.textContent = "Nochmal spielen";
     this.winOverlay = win;
     this.retryWinButton = retryWin;
+  }
+
+  setCompatWarning(text) {
+    if (!text) {
+      this.compatWarningEl.classList.add("hs-hidden");
+      return;
+    }
+    this.compatWarningEl.textContent = text;
+    this.compatWarningEl.classList.remove("hs-hidden");
   }
 
   showMenu() {
@@ -275,7 +429,9 @@ export class UIManager {
   hideDeath() {
     this.deathOverlay.classList.add("hs-hidden");
   }
-  showWin() {
+  showWin(title, text) {
+    if (title) this.winTitleEl.textContent = title;
+    if (text) this.winTextEl.textContent = text;
     this.winOverlay.classList.remove("hs-hidden");
   }
   hideWin() {
@@ -303,6 +459,10 @@ export class UIManager {
     this.sanityFill.style.width = `${Math.max(0, Math.min(100, value))}%`;
   }
 
+  setStamina(value) {
+    this.staminaFill.style.width = `${Math.max(0, Math.min(100, value * 100))}%`;
+  }
+
   setBattery(value) {
     const pct = Math.round(value * 100);
     this.batteryEl.textContent = `TASCHENLAMPE ${pct}%`;
@@ -319,5 +479,23 @@ export class UIManager {
   flashJumpscare() {
     this.jumpscareEl.classList.add("flash");
     setTimeout(() => this.jumpscareEl.classList.remove("flash"), 180);
+  }
+
+  showHint(text, duration = 6000) {
+    this.hintEl.textContent = text;
+    this.hintEl.style.display = "block";
+    clearTimeout(this._hintTimer);
+    this._hintTimer = setTimeout(() => {
+      this.hintEl.style.display = "none";
+    }, duration);
+  }
+
+  showCaption(text, duration = 2200) {
+    this.captionEl.textContent = text;
+    this.captionEl.style.display = "block";
+    clearTimeout(this._captionTimer);
+    this._captionTimer = setTimeout(() => {
+      this.captionEl.style.display = "none";
+    }, duration);
   }
 }

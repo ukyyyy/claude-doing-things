@@ -47,6 +47,7 @@ let ok = true;
 const targets = [
   { name: "panel", ...POI.panel },
   { name: "exitDoor", ...POI.exitDoor },
+  { name: "finalExit", ...POI.finalExit },
   ...POI.fuses.map((f) => ({ name: `fuse ${f.id}`, x: f.x, z: f.z })),
   ...POI.batteries.map((b) => ({ name: `battery ${b.id}`, x: b.x, z: b.z })),
   ...POI.notes.map((n) => ({ name: `note ${n.id}`, x: n.x, z: n.z })),

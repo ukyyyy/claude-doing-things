@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { DEFAULT_KEYBINDINGS, DIFFICULTY_PRESETS } from "../core/Settings.js";
 
 const WALK_SPEED = 3.1;
 const SPRINT_SPEED = 5.6;
@@ -8,6 +9,9 @@ const EYE_HEIGHT_STAND = 1.62;
 const EYE_HEIGHT_CROUCH = 1.0;
 const FLASHLIGHT_DRAIN_PER_SEC = 0.045;
 const FLASHLIGHT_RECHARGE_PER_SEC = 0.02;
+const STAMINA_DRAIN_PER_SEC = 0.3;
+const STAMINA_REGEN_PER_SEC = 0.16;
+const STAMINA_MIN_TO_SPRINT = 0.06;
 
 export class PlayerController {
   constructor(camera, domElement, level, settings) {
@@ -29,6 +33,7 @@ export class PlayerController {
 
     this.battery = 1;
     this.flashlightOn = false;
+    this.stamina = 1;
 
     this._footstepTimer = 0;
     this._bobTime = 0;
@@ -53,6 +58,14 @@ export class PlayerController {
     document.addEventListener("keydown", this._onKeyDown);
     document.addEventListener("keyup", this._onKeyUp);
     document.addEventListener("pointerlockchange", this._onPointerLockChange);
+  }
+
+  _kb() {
+    return this.settings?.keybindings || DEFAULT_KEYBINDINGS;
+  }
+
+  _difficulty() {
+    return DIFFICULTY_PRESETS[this.settings?.difficulty] || DIFFICULTY_PRESETS.normal;
   }
 
   lock() {
@@ -86,8 +99,9 @@ export class PlayerController {
   _onKeyDown(e) {
     if (!this.locked) return;
     this.keys.add(e.code);
-    if (e.code === "KeyF") this.toggleFlashlight();
-    if (e.code === "KeyC" || e.code === "ControlLeft") this.crouching = !this.crouching;
+    const kb = this._kb();
+    if (e.code === kb.flashlight) this.toggleFlashlight();
+    if (e.code === kb.crouch) this.crouching = !this.crouching;
   }
 
   _onKeyUp(e) {
@@ -130,16 +144,24 @@ export class PlayerController {
   update(dt) {
     const forward = this.getForward();
     const right = new THREE.Vector3(-forward.z, 0, forward.x);
+    const kb = this._kb();
 
     let ix = 0;
     let iz = 0;
-    if (this.keys.has("KeyW") || this.keys.has("ArrowUp")) iz += 1;
-    if (this.keys.has("KeyS") || this.keys.has("ArrowDown")) iz -= 1;
-    if (this.keys.has("KeyD") || this.keys.has("ArrowRight")) ix += 1;
-    if (this.keys.has("KeyA") || this.keys.has("ArrowLeft")) ix -= 1;
+    if (this.keys.has(kb.forward) || this.keys.has("ArrowUp")) iz += 1;
+    if (this.keys.has(kb.back) || this.keys.has("ArrowDown")) iz -= 1;
+    if (this.keys.has(kb.right) || this.keys.has("ArrowRight")) ix += 1;
+    if (this.keys.has(kb.left) || this.keys.has("ArrowLeft")) ix -= 1;
 
     this.moving = ix !== 0 || iz !== 0;
-    this.sprinting = this.moving && this.keys.has("ShiftLeft") && !this.crouching;
+    const wantsSprint = this.moving && this.keys.has(kb.sprint) && !this.crouching;
+    this.sprinting = wantsSprint && this.stamina > STAMINA_MIN_TO_SPRINT;
+
+    if (this.sprinting) {
+      this.stamina = Math.max(0, this.stamina - STAMINA_DRAIN_PER_SEC * dt);
+    } else {
+      this.stamina = Math.min(1, this.stamina + STAMINA_REGEN_PER_SEC * dt);
+    }
 
     let speed = this.crouching ? CROUCH_SPEED : this.sprinting ? SPRINT_SPEED : WALK_SPEED;
 
@@ -155,8 +177,9 @@ export class PlayerController {
     }
 
     // Flashlight battery
+    const batteryDrainMult = this._difficulty().batteryDrain;
     if (this.flashlightOn) {
-      this.battery = Math.max(0, this.battery - FLASHLIGHT_DRAIN_PER_SEC * dt);
+      this.battery = Math.max(0, this.battery - FLASHLIGHT_DRAIN_PER_SEC * batteryDrainMult * dt);
       if (this.battery <= 0) this.toggleFlashlight(false);
     } else {
       this.battery = Math.min(1, this.battery + FLASHLIGHT_RECHARGE_PER_SEC * dt);

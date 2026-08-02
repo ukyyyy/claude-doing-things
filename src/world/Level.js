@@ -7,6 +7,7 @@ import {
   SAFE_ZONES,
   CELL_SIZE,
   cellCenterWorld,
+  ASCENT_SHAFT,
 } from "./levelLayout.js";
 import { initMaterials } from "./AssetFactory.js";
 
@@ -38,6 +39,7 @@ export class Level {
     this.panelMesh = null;
     this.exitDoorMesh = null;
     this.exitGlowLight = null;
+    this.finalExitMesh = null;
 
     this._buildFloorCeiling();
     this._buildWalls();
@@ -49,6 +51,7 @@ export class Level {
     this._buildBatteries();
     this._buildDoors();
     this._buildPanelAndExit();
+    this._buildAscentShaft();
   }
 
   worldWidth() {
@@ -150,21 +153,29 @@ export class Level {
     const rng = mulberry32(42);
     const crateGeo = new THREE.BoxGeometry(1.4, 1.4, 1.4);
 
-    const placeCrates = (room, count) => {
+    const crateSpots = [];
+    const queueCrates = (room, count) => {
       for (let i = 0; i < count; i++) {
         const x = (room.x0 + 1 + rng() * (room.x1 - room.x0 - 2)) * CELL_SIZE;
         const z = (room.z0 + 1 + rng() * (room.z1 - room.z0 - 2)) * CELL_SIZE;
-        const mesh = new THREE.Mesh(crateGeo, this.materials.crate);
-        mesh.position.set(x, 0.7, z);
-        mesh.rotation.y = rng() * Math.PI;
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        this.group.add(mesh);
+        crateSpots.push({ x, z, rotY: rng() * Math.PI });
       }
     };
-    placeCrates(ROOMS.storage, 6);
-    placeCrates(ROOMS.entrance, 2);
-    placeCrates(ROOMS.maintenance, 4);
+    queueCrates(ROOMS.storage, 6);
+    queueCrates(ROOMS.entrance, 2);
+    queueCrates(ROOMS.maintenance, 4);
+
+    const crates = new THREE.InstancedMesh(crateGeo, this.materials.crate, crateSpots.length);
+    crates.castShadow = true;
+    crates.receiveShadow = true;
+    const dummy = new THREE.Object3D();
+    crateSpots.forEach((c, i) => {
+      dummy.position.set(c.x, 0.7, c.z);
+      dummy.rotation.set(0, c.rotY, 0);
+      dummy.updateMatrix();
+      crates.setMatrixAt(i, dummy.matrix);
+    });
+    this.group.add(crates);
 
     // Blood decals for atmosphere near the later, scarier rooms.
     const decalGeo = new THREE.PlaneGeometry(2.2, 2.2);
@@ -393,6 +404,44 @@ export class Level {
     exitGlow.position.set(exitCenter.x, 2, exitCenter.z - CELL_SIZE);
     this.group.add(exitGlow);
     this.exitGlowLight = exitGlow;
+  }
+
+  _buildAscentShaft() {
+    // Chapter 2: a bare, windswept stairwell up to the surface. The
+    // stalker's territory ends at the old exit door, so lighting here
+    // leans "relief" rather than dread - fewer dead bulbs, a colder tone.
+    const rng = mulberry32(99);
+    const pipeGeo = new THREE.CylinderGeometry(0.1, 0.1, ASCENT_SHAFT.z1 - ASCENT_SHAFT.z0, 8);
+    pipeGeo.rotateX(Math.PI / 2);
+    const pipeXs = [ASCENT_SHAFT.x0 + 1, ASCENT_SHAFT.x1 - 1];
+    for (const px of pipeXs) {
+      const center = cellCenterWorld(px, (ASCENT_SHAFT.z0 + ASCENT_SHAFT.z1) / 2);
+      const pipe = new THREE.Mesh(pipeGeo, this.materials.wallAlt);
+      pipe.position.set(center.x, WALL_HEIGHT - 0.25, center.z);
+      this.group.add(pipe);
+    }
+
+    for (let z = ASCENT_SHAFT.z0 + 2; z < ASCENT_SHAFT.z1; z += 4) {
+      const center = cellCenterWorld((ASCENT_SHAFT.x0 + ASCENT_SHAFT.x1) / 2, z);
+      const light = new THREE.PointLight(0xcfe0ff, 22, 0, 2);
+      light.position.set(center.x, WALL_HEIGHT - 0.4, center.z);
+      this.group.add(light);
+      this.flickerLights.push({ light, base: 22, seed: rng() * 1000 });
+    }
+
+    const finalCenter = cellCenterWorld(POI.finalExit.x, POI.finalExit.z);
+    const finalExit = new THREE.Mesh(
+      new THREE.BoxGeometry(CELL_SIZE * 0.9, WALL_HEIGHT * 0.85, 0.4),
+      this.materials.exitDoor
+    );
+    finalExit.position.set(finalCenter.x, (WALL_HEIGHT * 0.85) / 2, finalCenter.z);
+    finalExit.userData = { kind: "finalExit" };
+    this.group.add(finalExit);
+    this.finalExitMesh = finalExit;
+
+    const finalGlow = new THREE.PointLight(0x1fae4c, 10, 0, 2);
+    finalGlow.position.set(finalCenter.x, 2, finalCenter.z - CELL_SIZE);
+    this.group.add(finalGlow);
   }
 
   setPanelPowered(powered) {

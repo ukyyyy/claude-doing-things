@@ -71,6 +71,7 @@ export const POI = {
   ],
   panel: { x: 16, z: 24 },
   exitDoor: { x: 16, z: 26 },
+  finalExit: { x: 16, z: 40 },
   batteries: [
     { id: "batt1", x: 7, z: 24 },
     { id: "batt2", x: 26, z: 7 },
@@ -104,6 +105,16 @@ lest, geht nicht in die Wartungsschächte. Geht einfach nicht rein."`,
 WIR HABEN NUR ZEIT GEWONNEN
 LAUF WENN DU DAS LIEST"`,
     },
+    {
+      id: "note4",
+      x: 13,
+      z: 33,
+      title: "Kritzelei am Schacht",
+      text: `"Der Aufstiegsschacht ist die einzige Route, die nicht durch ihr
+Revier führt. Keine Ahnung warum. Vielleicht mag sie den Wind hier
+nicht. Vielleicht kommt sie einfach nie so weit. Ich nehme es nicht
+als gutes Zeichen - ich nehme es als Ausgang."`,
+    },
   ],
   doors: [
     { x: 24, z: 36, axis: "x" }, // entrance hall -> south corridor
@@ -135,8 +146,10 @@ export const SAFE_ZONES = [
   { x0: 2, z0: 2, x1: 9, z1: 8 }, // entrance hall - starting light
 ];
 
+export const ASCENT_SHAFT = { x0: 11, z0: 29, x1: 22, z1: 40, name: "Aufstiegsschacht" };
+
 export function buildLevelGrid() {
-  const grid = new LevelGrid(34, 29);
+  const grid = new LevelGrid(34, 44);
 
   for (const r of Object.values(ROOMS)) {
     grid.carveRect(r.x0, r.z0, r.x1, r.z1);
@@ -154,6 +167,14 @@ export function buildLevelGrid() {
   // Vent shortcut (player-only: enemy pathfinding excludes these cells)
   grid.markVentRect(9, 3, 30, 4); // horizontal run
   grid.markVentRect(29, 4, 30, 17); // turn south toward maintenance bay
+
+  // Chapter 2: the ascent shaft beyond the generator room's exit door.
+  // The stalker's territory ends at the old exit - this whole stretch is
+  // marked "vent" purely to reuse the same enemy-pathfinding exclusion.
+  grid.carveRect(15, 26, 17, 29); // connector from the generator room
+  grid.carveRect(ASCENT_SHAFT.x0, ASCENT_SHAFT.z0, ASCENT_SHAFT.x1, ASCENT_SHAFT.z1);
+  grid.markVentRect(15, 27, 17, 29);
+  grid.markVentRect(ASCENT_SHAFT.x0, ASCENT_SHAFT.z0, ASCENT_SHAFT.x1, ASCENT_SHAFT.z1);
 
   return grid;
 }

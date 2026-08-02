@@ -189,6 +189,27 @@ export class AudioManager {
     osc.stop(now + 0.2);
   }
 
+  ventScratch(danger = 0.3) {
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = Math.random() * 2 - 1;
+
+    const noise = this._noiseSource(false);
+    const filter = ctx.createBiquadFilter();
+    filter.type = "highpass";
+    filter.frequency.value = 1800 + danger * 1500;
+    const gain = ctx.createGain();
+    const vol = 0.12 + danger * 0.28;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(vol, now + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+    noise.connect(filter).connect(gain).connect(pan).connect(this.sfxBus);
+    noise.start(now);
+    noise.stop(now + 0.2);
+  }
+
   chaseStinger() {
     if (!this.ctx) return;
     const ctx = this.ctx;

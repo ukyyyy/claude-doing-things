@@ -72,6 +72,16 @@ body {
   96% { opacity: 1; }
 }
 
+.hs-compat-warning {
+  max-width: 640px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #ffd580;
+  background: rgba(120, 80, 10, 0.25);
+  border: 1px solid rgba(255, 213, 128, 0.4);
+  padding: 0.6rem 1rem;
+}
+
 .hs-sub {
   max-width: 640px;
   line-height: 1.7;
@@ -119,6 +129,10 @@ body {
 
 .hs-overlay {
   overflow-y: auto;
+}
+
+#preload {
+  z-index: 100;
 }
 
 .hs-overlay-menu {
@@ -203,6 +217,58 @@ body {
 .hs-slider {
   width: 100%;
   accent-color: #b6221c;
+}
+
+.hs-seg-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hs-seg-btn {
+  flex: 1;
+  background: #1a1414;
+  border: 1px solid #4a4340;
+  color: #b7b0a8;
+  padding: 0.5rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.hs-seg-btn:hover {
+  background: #2a2422;
+}
+
+.hs-seg-btn.active {
+  background: #6b1414;
+  border-color: #b6221c;
+  color: #fff;
+}
+
+.hs-btn-inline {
+  margin-top: 0;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.75rem;
+  justify-self: start;
+}
+
+.hs-journal-list {
+  width: min(560px, 88vw);
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.hs-journal-entry {
+  background: rgba(10, 10, 10, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 2px solid #d98c1f;
+  padding: 0.75rem 1rem;
 }
 
 .hs-note {
@@ -333,6 +399,52 @@ body {
   letter-spacing: 0.1em;
   color: #7d766f;
 }
+
+#stamina-bar {
+  position: absolute;
+  bottom: 3.7rem;
+  left: 1.5rem;
+  width: 160px;
+  height: 6px;
+  border: 1px solid #3a4340;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+#stamina-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #3a6b6b, #5fb3b3);
+  transition: width 0.15s linear;
+}
+
+#hint {
+  position: absolute;
+  top: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(420px, 80vw);
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #d98c1f;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(217, 140, 31, 0.4);
+  padding: 0.6rem 1rem;
+}
+
+#caption {
+  position: absolute;
+  bottom: 8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: #cfc7bd;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 0.3rem 0.8rem;
+  font-style: italic;
+}
+
 
 #vignette {
   position: absolute;
